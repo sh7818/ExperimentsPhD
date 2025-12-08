@@ -1,0 +1,3 @@
+[submodule "external/ability-hand-api"]
+	path = external/ability-hand-api
+	url = https://github.com/psyonicinc/ability-hand-api

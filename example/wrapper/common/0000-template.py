@@ -63,3 +63,26 @@ arm.set_state(state=0)
 time.sleep(10)
 
 arm.disconnect()
+
+##stuck in this loop looking for button to be on
+def button_press():
+    while True:
+        if arm.get_cgpio_digital(0) == 1:
+            break
+        else:
+            time.sleep(0.5)
+
+def run_program():
+    button_press()
+    arm = XArmAPI(ip, do_not_open=True)
+    arm.register_error_warn_changed_callback(hangle_err_warn_changed)
+    arm.connect()
+
+    # enable motion
+    arm.motion_enable(enable=True)
+    # set mode: position control mode
+    arm.set_mode(0)
+    # set state: sport state
+    arm.set_state(state=0)
+
+    ##TODO tell robot to do things
