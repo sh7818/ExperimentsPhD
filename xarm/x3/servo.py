@@ -8,7 +8,7 @@
 
 from ..core.config.x_config import XCONF
 from ..core.config.x_code import ServoError
-from ..core.utils.log import logger, pretty_print
+from ..core.utils.log import logger, origin_logger
 from .base import Base
 from .decorator import xarm_is_connected
 
@@ -35,21 +35,20 @@ class Servo(Base):
                     'desc': servo_error.description[lang]
                 })
         if show:
-            pretty_print('************* {}, {}: {} **************'.format(
+            origin_logger.info('************* {}, {}: {} **************'.format(
                 '获取伺服信息' if lang == 'cn' else 'GetServoDebugMsg',
                 '状态' if lang == 'cn' else 'Status',
-                ret[0]), color='light_blue')
+                ret[0]))
             for servo_info in dbmsg:
-                color = 'red' if servo_info['code'] != 0 or servo_info['status'] != 0 else 'white'
-                pretty_print('* {}, {}: {}, {}: {}, {}: {}'.format(
+                origin_logger.info('* {}, {}: {}, {}: {}, {}: {}'.format(
                     servo_info['name'],
                     '状态' if lang == 'cn' else 'Status',
                     servo_info['status'],
                     '错误码' if lang == 'cn' else 'Code',
                     servo_info['code'],
                     '信息' if lang == 'cn' else 'Info',
-                    servo_info['title']), color=color)
-            pretty_print('*' * 50, color='light_blue')
+                    servo_info['title']))
+            origin_logger.info('*' * 50)
         return ret[0], dbmsg
 
     @xarm_is_connected(_type='set')
@@ -348,19 +347,32 @@ class Servo(Base):
         def _get_servo_version(id_num):
             versions = ['*', '*', '*']
             ret1 = self.get_servo_addr_16(id_num, 0x0801)
-            ret2 = self.get_servo_addr_16(id_num, 0x0802)
-            ret3 = self.get_servo_addr_16(id_num, 0x0803)
+            ret = self.get_servo_debug_msg()
+            if ret[1][id_num-1]['code'] != 0:
+                ret1 = self.arm_cmd.servo_error_addr_r32(id_num, 0x0801)
+                ret2 = self.arm_cmd.servo_error_addr_r32(id_num, 0x0802)
+                ret3 = self.arm_cmd.servo_error_addr_r32(id_num, 0x0803)
+                if len(ret1) > 1:
+                    ret1[1] = ret1[1] >> 16
+                if len(ret2) > 1:
+                    ret2[1] = ret2[1] >> 16
+                if len(ret3) > 1:
+                    ret3[1] = ret3[1] >> 16
+            else:
+                ret2 = self.get_servo_addr_16(id_num, 0x0802)
+                ret3 = self.get_servo_addr_16(id_num, 0x0803)
+            
             code = 0
-            if ret1[0] == 0:
-                versions[0] = ret1[1]
+            if ret1[0] in [0, 1, 2] and len(ret1) > 1:
+                versions[0] = ret1[1] if abs(ret1[1]) < 1000 else 0
             else:
                 code = ret1[0]
-            if ret2[0] == 0:
-                versions[1] = ret2[1]
+            if ret2[0] in [0, 1, 2] and len(ret2) > 1:
+                versions[1] = ret2[1] if abs(ret2[1]) < 1000 else 0
             else:
                 code = ret2[0]
-            if ret3[0] == 0:
-                versions[2] = ret3[1]
+            if ret3[0] in [0, 1, 2] and len(ret3) > 1:
+                versions[2] = ret3[1] if abs(ret3[1]) < 1000 else 0
             else:
                 code = ret3[0]
             # if code != 0:
@@ -412,11 +424,15 @@ class Servo(Base):
             count = 7 if servo_id == 8 else self.axis
             errcodes = [0] * count
             for i in range(count):
-                ret = self.get_servo_addr_32(i + 1, XCONF.ServoConf.CURR_POS)
+                # ret = self.get_servo_addr_32(i + 1, XCONF.ServoConf.CURR_POS)
+                if self.version_is_ge(2, 7, 100):
+                    ret = self.get_servo_addr_16(i + 1, 0x000F)
+                else:
+                    ret = self.get_servo_addr_32(i + 1, 0x000F)
                 if ret[0] == XCONF.UxbusState.ERR_CODE:
                     _, err_warn = self.get_err_warn_code()
                     if _ == 0:
-                        if i + 11 == err_warn[0]:
+                        if i + 11 >= err_warn[0]:
                             errcodes[i] = ret[1]
                         else:
                             errcodes[i] = 0
@@ -426,11 +442,15 @@ class Servo(Base):
                         errcodes[i] = ret[1]
         else:
             errcodes = 0
-            ret = self.get_servo_addr_32(servo_id, XCONF.ServoConf.CURR_POS)
+            # ret = self.get_servo_addr_32(servo_id, XCONF.ServoConf.CURR_POS)
+            if self.version_is_ge(2, 7, 100):
+                ret = self.get_servo_addr_16(servo_id, 0x000F)
+            else:
+                ret = self.get_servo_addr_32(servo_id, 0x000F)
             if ret[0] == XCONF.UxbusState.ERR_CODE:
                 _, err_warn = self.get_err_warn_code()
                 if _ == 0:
-                    if servo_id + 10 == err_warn[0]:
+                    if servo_id + 10 >= err_warn[0]:
                         errcodes = ret[1]
                     else:
                         errcodes = 0

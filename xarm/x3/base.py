@@ -38,7 +38,7 @@ try:
 except:
     SerialPort = None 
 from ..core.wrapper import UxbusCmdSer, UxbusCmdTcp
-from ..core.utils.log import logger, pretty_print
+from ..core.utils.log import logger, origin_logger
 from ..core.utils import convert, crc16
 from ..core.config.x_code import ControllerWarn, ControllerError, ControllerErrorCodeMap, ControllerWarnCodeMap
 from .utils import compare_time, compare_version, filter_invaild_number
@@ -87,6 +87,8 @@ class Base(BaseObject, Events):
             self._default_bio_baud = kwargs.get('default_bio_baud', 2000000)
             self._default_gripper_baud = kwargs.get('default_gripper_baud', 2000000)
             self._default_robotiq_baud = kwargs.get('default_robotiq_baud', 115200)
+            self._default_dhpgc_gripper_baud = kwargs.get('default_dhpgc_gripper_baud', 115200)
+            self._default_rh56_finger_baud = kwargs.get('default_rh56_finger_baud', 115200)
             self._default_linear_motor_baud = kwargs.get('default_linear_motor_baud', kwargs.get('default_linear_track_baud', 2000000))
 
             self._max_callback_thread_count = kwargs.get('max_callback_thread_count', 0)
@@ -198,7 +200,7 @@ class Base(BaseObject, Events):
 
             self._ignore_error = False
             self._ignore_state = False
-            self.modbus_baud = -1
+            self.tgpio_modbus_baud = -1
 
             self.gripper_is_enabled = False
             self.gripper_speed = 0
@@ -234,7 +236,7 @@ class Base(BaseObject, Events):
             self._arm_type_is_1300 = False
             self._control_box_type_is_1300 = False
 
-            self.linear_motor_baud = -1
+            self.control_box_modbus_baud = -1
             self.linear_motor_speed = 1
             self.linear_motor_is_enabled = False
             self._ft_ext_force = [0, 0, 0, 0, 0, 0]
@@ -251,9 +253,38 @@ class Base(BaseObject, Events):
             self._fb_key_transid_map = {}
             self._fb_transid_type_map = {}
             self._fb_transid_result_map = {}
+            
+            self.dhpgc_is_activated = False
+            self.dhpgc_gripper_speed = 0
+            self.dhpgc_picked_status = False
+
+            self.rh56_finger_status = [2, 2, 2, 2, 2, 2]
+            self.rh56_finger_pos = [0, 0, 0, 0, 0, 0]
+            self.rh56_finger_speed = [0, 0, 0, 0, 0, 0]
+            self.rh56_finger_force = [0, 0, 0, 0, 0, 0]
 
             if not do_not_open:
                 self.connect()
+
+    @property
+    def modbus_baud(self):
+        """仅用于兼容旧代码"""
+        return self.tgpio_modbus_baud
+
+    @modbus_baud.setter
+    def modbus_baud(self, baud):
+        """仅用于兼容旧代码"""
+        self.tgpio_modbus_baud = baud
+
+    @property
+    def linear_motor_baud(self):
+        """仅用于兼容旧代码"""
+        return self.control_box_modbus_baud
+
+    @linear_motor_baud.setter
+    def linear_motor_baud(self, baud):
+        """仅用于兼容旧代码"""
+        self.control_box_modbus_baud = baud
 
     def _init(self):
         self._last_position = [201.5, 0, 140.5, 3.1415926, 0, 0]  # [x(mm), y(mm), z(mm), roll(rad), pitch(rad), yaw(rad)]
@@ -327,7 +358,7 @@ class Base(BaseObject, Events):
 
         self._ignore_error = False
         self._ignore_state = False
-        self.modbus_baud = -1
+        self.tgpio_modbus_baud = -1
 
         self.gripper_is_enabled = False
         self.gripper_speed = 0
@@ -363,7 +394,7 @@ class Base(BaseObject, Events):
         self._arm_type_is_1300 = False
         self._control_box_type_is_1300 = False
 
-        self.linear_motor_baud = -1
+        self.control_box_modbus_baud = -1
         self.linear_motor_speed = 1
         self.linear_motor_is_enabled = False
 
@@ -374,6 +405,15 @@ class Base(BaseObject, Events):
         self._need_sync = False
         self._only_check_result = 0
         self._keep_heart = True
+        
+        self.dhpgc_is_activated = False
+        self.dhpgc_gripper_speed = 0
+        self.dhpgc_picked_status = False
+
+        self.rh56_finger_status = [2, 2, 2, 2, 2, 2]
+        self.rh56_finger_pos = [0, 0, 0, 0, 0, 0]
+        self.rh56_finger_speed = [0, 0, 0, 0, 0, 0]
+        self.rh56_finger_force = [0, 0, 0, 0, 0, 0]
 
     @staticmethod
     def log_api_info(msg, *args, code=0, **kwargs):
@@ -1004,7 +1044,7 @@ class Base(BaseObject, Events):
 
     def _core_set_modbus_baudrate(self, baudrate, use_old=False):
         """
-        此函数是用于覆盖core.set_modbus_baudrate方法，主要用于兼容旧代码
+        此函数是用于覆盖core.set_modbus_baudrate方法, 主要用于兼容旧代码
         新代码建议直接使用set_tgpio_modbus_baudrate此接口
         :param baudrate: 
         :param use_old: 
@@ -1013,8 +1053,8 @@ class Base(BaseObject, Events):
         :return [code, ...]
         """
         if not use_old:
-            ret = self.set_tgpio_modbus_baudrate(baudrate)
-            return [ret, self.modbus_baud]
+            ret = self.set_rs485_baudrate(baudrate)
+            return [ret, self.tgpio_modbus_baud]
         else:
             return self.arm_cmd.set_modbus_baudrate_old(baudrate)
 
@@ -1045,7 +1085,7 @@ class Base(BaseObject, Events):
                 pass
         self._report_connect_changed_callback(False, False)
         with self._pause_cond:
-            self._pause_cond.notifyAll()
+            self._pause_cond.notify_all() if hasattr(self._pause_cond, 'notify_all') else self._pause_cond.notifyAll()
         self._clean_thread()
 
     def set_timeout(self, timeout):
@@ -1235,6 +1275,9 @@ class Base(BaseObject, Events):
                 if not report_socket_connected:
                     report_socket_connected = True
                     self._report_connect_changed_callback(main_socket_connected, report_socket_connected)
+                if self._stream_report.rx_que.empty():
+                    time.sleep(0.001)
+                    continue
                 recv_data = self._stream_report.read(1)
                 if recv_data != -1:
                     size = convert.bytes_to_u32(recv_data)
@@ -1261,7 +1304,7 @@ class Base(BaseObject, Events):
             time.sleep(0.001)
         if self._pause_cnts > 0:
             with self._pause_cond:
-                self._pause_cond.notifyAll()
+                self._pause_cond.notify_all() if hasattr(self._pause_cond, 'notify_all') else self._pause_cond.notifyAll()
         self.disconnect()
 
     def _handle_report_data(self, data):
@@ -1281,15 +1324,15 @@ class Base(BaseObject, Events):
                 if error_code != self._error_code:
                     self._error_code = error_code
                     if self._error_code != 0:
-                        pretty_print('Error, code: {}'.format(self._error_code), color='red')
+                        origin_logger.error('Errorcode: {}'.format(self._error_code))
                     else:
-                        pretty_print('Error had clean', color='blue')
+                        origin_logger.info('Error had clean')
                 if warn_code != self._warn_code:
                     self._warn_code = warn_code
                     if self._warn_code != 0:
-                        pretty_print('Warn, code: {}'.format(self._warn_code), color='yellow')
+                        origin_logger.warning('Warn, code: {}'.format(self._warn_code))
                     else:
-                        pretty_print('Warnning had clean', color='blue')
+                        origin_logger.info('Warnning had clean')
                 self._report_error_warn_changed_callback()
                 logger.info('OnReport -> err={}, warn={}, state={}, cmdnum={}, mtbrake={}, mtable={}'.format(
                     error_code, warn_code, state, cmd_num, mtbrake, mtable
@@ -1318,11 +1361,11 @@ class Base(BaseObject, Events):
             if not self._is_first_report:
                 if state in [4, 5] or not all([bool(item[0] & item[1]) for item in zip(mtbrake, mtable)][:self.axis]):
                     # if self._is_ready:
-                    #     pretty_print('[report], xArm is not ready to move', color='red')
+                    #     origin_logger.info('[report], xArm is not ready to move')
                     self._is_ready = False
                 else:
                     # if not self._is_ready:
-                    #     pretty_print('[report], xArm is ready to move', color='green')
+                    #     origin_logger.info('[report], xArm is ready to move')
                     self._is_ready = True
             else:
                 self._is_ready = False
@@ -1330,17 +1373,17 @@ class Base(BaseObject, Events):
             if not self._is_ready:
                 self._sleep_finish_time = 0
 
-            reset_tgpio_params = False
-            reset_linear_motor_params = False
+            reset_tgpio_modbus_params = False
+            reset_control_box_modbus_params = False
             if 0 < error_code <= 17:
-                reset_tgpio_params = True
-                reset_linear_motor_params = True
+                reset_tgpio_modbus_params = True
+                reset_control_box_modbus_params = True
             elif error_code in [19, 28]:
-                reset_tgpio_params = True
+                reset_tgpio_modbus_params = True
             elif error_code == 111:
-                reset_linear_motor_params = True
-            if reset_tgpio_params:
-                self.modbus_baud = -1
+                reset_control_box_modbus_params = True
+            if reset_tgpio_modbus_params:
+                self.tgpio_modbus_baud = -1
                 self.robotiq_is_activated = False
                 self.gripper_is_enabled = False
                 self.bio_gripper_is_enabled = False
@@ -1349,13 +1392,13 @@ class Base(BaseObject, Events):
                 self.gripper_is_enabled = False
                 self.gripper_speed = 0
                 self.gripper_version_numbers = [-1, -1, -1]
-            if reset_linear_motor_params:
-                self.linear_motor_baud = -1
+            if reset_control_box_modbus_params:
+                self.control_box_modbus_baud = -1
                 self.linear_motor_is_enabled = False
                 self.linear_motor_speed = 1
 
             # if error_code in [1, 10, 11, 12, 13, 14, 15, 16, 17, 19, 28]:
-            #     self.modbus_baud = -1
+            #     self.tgpio_modbus_baud = -1
             #     self.robotiq_is_activated = False
             #     self.gripper_is_enabled = False
             #     self.bio_gripper_is_enabled = False
@@ -1374,7 +1417,7 @@ class Base(BaseObject, Events):
             self._state = state
             if self.state != 3 and (_state == 3 or self._pause_cnts > 0):
                 with self._pause_cond:
-                    self._pause_cond.notifyAll()
+                    self._pause_cond.notify_all() if hasattr(self._pause_cond, 'notify_all') else self._pause_cond.notifyAll()
             self._cmd_num = cmd_num
             self._arm_motor_brake_states = mtbrake
             self._arm_motor_enable_states = mtable
@@ -1536,17 +1579,17 @@ class Base(BaseObject, Events):
                 return
             self._gravity_direction = convert.bytes_to_fp32s(rx_data[133:3*4 + 133], 3)
 
-            reset_tgpio_params = False
-            reset_linear_motor_params = False
+            reset_tgpio_modbus_params = False
+            reset_control_box_modbus_params = False
             if 0 < error_code <= 17:
-                reset_tgpio_params = True
-                reset_linear_motor_params = True
+                reset_tgpio_modbus_params = True
+                reset_control_box_modbus_params = True
             elif error_code in [19, 28]:
-                reset_tgpio_params = True
+                reset_tgpio_modbus_params = True
             elif error_code == 111:
-                reset_linear_motor_params = True
-            if reset_tgpio_params:
-                self.modbus_baud = -1
+                reset_control_box_modbus_params = True
+            if reset_tgpio_modbus_params:
+                self.tgpio_modbus_baud = -1
                 self.robotiq_is_activated = False
                 self.gripper_is_enabled = False
                 self.bio_gripper_is_enabled = False
@@ -1555,13 +1598,20 @@ class Base(BaseObject, Events):
                 self.gripper_is_enabled = False
                 self.gripper_speed = 0
                 self.gripper_version_numbers = [-1, -1, -1]
-            if reset_linear_motor_params:
-                self.linear_motor_baud = -1
+                self.dhpgc_is_activated = False
+                self.dhpgc_gripper_speed = 0
+                self.dhpgc_picked_status = False
+                self.rh56_finger_status = [2, 2, 2, 2, 2, 2]
+                self.rh56_finger_pos = [0, 0, 0, 0, 0, 0]
+                self.rh56_finger_speed = [0, 0, 0, 0, 0, 0]
+                self.rh56_finger_force = [0, 0, 0, 0, 0, 0]
+            if reset_control_box_modbus_params:
+                self.control_box_modbus_baud = -1
                 self.linear_motor_is_enabled = False
                 self.linear_motor_speed = 0
 
             # if error_code in [1, 10, 11, 12, 13, 14, 15, 16, 17, 19, 28]:
-            #     self.modbus_baud = -1
+            #     self.tgpio_modbus_baud = -1
             #     self.robotiq_is_activated = False
             #     self.gripper_is_enabled = False
             #     self.bio_gripper_is_enabled = False
@@ -1580,15 +1630,15 @@ class Base(BaseObject, Events):
                 if error_code != self._error_code:
                     self._error_code = error_code
                     if self._error_code != 0:
-                        pretty_print('ControllerError, code: {}'.format(self._error_code), color='red')
+                        origin_logger.error('ControllerError, code: {}'.format(self._error_code))
                     else:
-                        pretty_print('ControllerError had clean', color='blue')
+                        origin_logger.info('ControllerError had clean')
                 if warn_code != self._warn_code:
                     self._warn_code = warn_code
                     if self._warn_code != 0:
-                        pretty_print('ControllerWarning, code: {}'.format(self._warn_code), color='yellow')
+                        origin_logger.warning('ControllerWarning, code: {}'.format(self._warn_code))
                     else:
-                        pretty_print('ControllerWarning had clean', color='blue')
+                        origin_logger.info('ControllerWarning had clean')
                 self._report_error_warn_changed_callback()
                 logger.info('OnReport -> err={}, warn={}, state={}, cmdnum={}, mtbrake={}, mtable={}, mode={}'.format(
                     error_code, warn_code, state, cmd_num, mtbrake, mtable, mode
@@ -1625,11 +1675,11 @@ class Base(BaseObject, Events):
             if not self._is_first_report:
                 if state in [4, 5] or not all([bool(item[0] & item[1]) for item in zip(mtbrake, mtable)][:self.axis]):
                     # if self._is_ready:
-                    #     pretty_print('[report], xArm is not ready to move', color='red')
+                    #     origin_logger.info('[report], xArm is not ready to move')
                     self._is_ready = False
                 else:
                     # if not self._is_ready:
-                    #     pretty_print('[report], xArm is ready to move', color='green')
+                    #     origin_logger.info('[report], xArm is ready to move')
                     self._is_ready = True
             else:
                 self._is_ready = False
@@ -1644,7 +1694,7 @@ class Base(BaseObject, Events):
             self._state = state
             if self.state != 3 and (_state == 3 or self._pause_cnts > 0):
                 with self._pause_cond:
-                    self._pause_cond.notifyAll()
+                    self._pause_cond.notify_all() if hasattr(self._pause_cond, 'notify_all') else self._pause_cond.notifyAll()
             self._mode = mode
             self._cmd_num = cmd_num
 
@@ -1853,19 +1903,19 @@ class Base(BaseObject, Events):
 
                 if self.state != 3 and (state == 3 or self._pause_cnts > 0):
                     with self._pause_cond:
-                        self._pause_cond.notifyAll()
+                        self._pause_cond.notify_all() if hasattr(self._pause_cond, 'notify_all') else self._pause_cond.notifyAll()
                 if cmd_num != self._cmd_num:
                     self._report_cmdnum_changed_callback()
                 if state != self._state:
                     self._report_state_changed_callback()
                 if state in [4, 5]:
                     # if self._is_ready:
-                    #     pretty_print('[report], xArm is not ready to move', color='red')
+                    #     origin_logger.info('[report], xArm is not ready to move')
                     self._sleep_finish_time = 0
                     self._is_ready = False
                 else:
                     # if not self._is_ready:
-                    #     pretty_print('[report], xArm is ready to move', color='green')
+                    #     origin_logger.info('[report], xArm is ready to move')
                     self._is_ready = True
                 if error_code != self._error_code or warn_code != self._warn_code:
                     self._report_error_warn_changed_callback()
@@ -2169,15 +2219,15 @@ class Base(BaseObject, Events):
             self._report_state_changed_callback()
         if self.state != 3 and (_state == 3 or self._pause_cnts > 0):
             with self._pause_cond:
-                self._pause_cond.notifyAll()
+                self._pause_cond.notify_all() if hasattr(self._pause_cond, 'notify_all') else self._pause_cond.notifyAll()
         if self._state in [4, 5]:
             self._sleep_finish_time = 0
             if self._is_ready:
-                pretty_print('[set_state], xArm is not ready to move', color='red')
+                origin_logger.info('[set_state], xArm is not ready to move')
             self._is_ready = False
         else:
             if not self._is_ready:
-                pretty_print('[set_state], xArm is ready to move', color='green')
+                origin_logger.info('[set_state], xArm is ready to move')
             self._is_ready = True
         self.log_api_info('API -> set_state({}) -> code={}, state={}'.format(state, ret[0], self._state), code=ret[0])
         return ret[0]
@@ -2217,25 +2267,23 @@ class Base(BaseObject, Events):
             self._error_code, self._warn_code = ret[1:3]
             self._last_update_err_time = time.monotonic()
         if show:
-            pretty_print('************* {}, {}: {} **************'.format(
+            origin_logger.info('************* {}, {}: {} **************'.format(
                          '获取控制器错误警告码' if lang == 'cn' else 'GetErrorWarnCode',
                          '状态' if lang == 'cn' else 'Status',
-                         ret[0]), color='light_blue')
+                         ret[0]))
             controller_error = ControllerError(self._error_code, status=0)
             controller_warn = ControllerWarn(self._warn_code, status=0)
-            pretty_print('* {}: {}, {}: {}'.format(
+            origin_logger.error('* {}: {}, {}: {}'.format(
                 '错误码' if lang == 'cn' else 'ErrorCode',
                 controller_error.code,
                 '信息' if lang == 'cn' else 'Info',
-                controller_error.title[lang]),
-                         color='red' if self._error_code != 0 else 'white')
-            pretty_print('* {}: {}, {}: {}'.format(
+                controller_error.title[lang]))
+            origin_logger.warning('* {}: {}, {}: {}'.format(
                 '警告码' if lang == 'cn' else 'WarnCode',
                 controller_warn.code,
                 '信息' if lang == 'cn' else 'Info',
-                controller_warn.title[lang]),
-                         color='yellow' if self._warn_code != 0 else 'white')
-            pretty_print('*' * 50, color='light_blue')
+                controller_warn.title[lang]))
+            origin_logger.info('*' * 50)
         return ret[0], ret[1:3] if ret[0] == 0 else [self._error_code, self._warn_code]
 
     @xarm_is_connected(_type='set')
@@ -2245,11 +2293,11 @@ class Base(BaseObject, Events):
         if self._state in [4, 5]:
             self._sleep_finish_time = 0
             if self._is_ready:
-                pretty_print('[clean_error], xArm is not ready to move', color='red')
+                origin_logger.info('[clean_error], xArm is not ready to move')
             self._is_ready = False
         else:
             if not self._is_ready:
-                pretty_print('[clean_error], xArm is ready to move', color='green')
+                origin_logger.info('[clean_error], xArm is ready to move')
             self._is_ready = True
         self.log_api_info('API -> clean_error -> code={}'.format(ret[0]), code=ret[0])
         return ret[0]
@@ -2275,11 +2323,11 @@ class Base(BaseObject, Events):
         if self._state in [4, 5]:
             self._sleep_finish_time = 0
             if self._is_ready:
-                pretty_print('[motion_enable], xArm is not ready to move', color='red')
+                origin_logger.info('[motion_enable], xArm is not ready to move')
             self._is_ready = False
         else:
             if not self._is_ready:
-                pretty_print('[motion_enable], xArm is ready to move', color='green')
+                origin_logger.info('[motion_enable], xArm is ready to move')
             self._is_ready = True
         self.log_api_info('API -> motion_enable -> code={}'.format(ret[0]), code=ret[0])
         return ret[0]
@@ -2305,6 +2353,8 @@ class Base(BaseObject, Events):
             expired = time.monotonic() + timeout + (self._sleep_finish_time if self._sleep_finish_time > time.monotonic() else 0)
         else:
             expired = 0
+        cnt = 0
+        max_cnt = 10
         state5_cnt = 0
         while timeout is None or time.monotonic() < expired:
             if not self.connected:
@@ -2333,10 +2383,25 @@ class Base(BaseObject, Events):
                 state5_cnt = 0
             if trans_id in self._fb_transid_result_map:
                 return 0, self._fb_transid_result_map.pop(trans_id, -1)
+
+            if time.monotonic() < self._sleep_finish_time or state == 3:
+                cnt = 0
+                max_cnt = 2 if state == 3 else max_cnt
+                time.sleep(0.05)
+                continue
+            if state == 0 or state == 1:
+                cnt = 0
+                max_cnt = 2
+                time.sleep(0.05)
+                continue
+            else:
+                cnt += 1
+                if cnt >= max_cnt:
+                    return 0, -1
             time.sleep(0.05)
         return APIState.WAIT_FINISH_TIMEOUT, -1
     
-    def wait_move(self, timeout=None, trans_id=-1, set_cnt=2):
+    def wait_move(self, timeout=None, trans_id=-1, set_cnt=2, is_stop=False):
         if self._support_feedback and trans_id > 0:
             return self._wait_feedback(timeout, trans_id)[0]
         if timeout is not None:
@@ -2364,7 +2429,8 @@ class Base(BaseObject, Events):
                 if state == 5:
                     state5_cnt += 1
                 if state != 5 or state5_cnt >= 20:
-                    self.log_api_info('wait_move, xarm is stop, state={}'.format(state), code=APIState.EMERGENCY_STOP)
+                    if not is_stop:
+                        self.log_api_info('wait_move, xarm is stop, state={}'.format(state), code=APIState.EMERGENCY_STOP)
                     return APIState.EMERGENCY_STOP
             else:
                 state5_cnt = 0
@@ -2386,7 +2452,7 @@ class Base(BaseObject, Events):
         return APIState.WAIT_FINISH_TIMEOUT
 
     @xarm_is_connected(_type='set')
-    def _check_modbus_code(self, ret, length=2, only_check_code=False, host_id=XCONF.TGPIO_HOST_ID):
+    def _check_modbus_code(self, ret, length=2, only_check_code=False, host_id=XCONF.ROBOT_RS485_HOST_ID):
         code = ret[0]
         if self._check_code(code) == 0:
             if not only_check_code:
@@ -2395,7 +2461,7 @@ class Base(BaseObject, Events):
                 if ret[1] != host_id:
                     return APIState.HOST_ID_ERR
             if code != 0:
-                if host_id == XCONF.TGPIO_HOST_ID:
+                if host_id == XCONF.ROBOT_RS485_HOST_ID:
                     if self.error_code != 19 and self.error_code != 28:
                         self.get_err_warn_code()
                     if self.error_code != 19 and self.error_code != 28:
@@ -2408,10 +2474,10 @@ class Base(BaseObject, Events):
         return code
 
     @xarm_is_connected(_type='set')
-    def checkset_modbus_baud(self, baudrate, check=True, host_id=XCONF.TGPIO_HOST_ID):
+    def checkset_modbus_baud(self, baudrate, check=True, host_id=XCONF.ROBOT_RS485_HOST_ID):
         if check and (not self._baud_checkset or baudrate <= 0):
             return 0
-        if check and ((host_id == XCONF.TGPIO_HOST_ID and self.modbus_baud == baudrate) or (host_id == XCONF.LINEAR_MOTOR_HOST_ID and self.linear_motor_baud == baudrate)):
+        if check and ((host_id == XCONF.ROBOT_RS485_HOST_ID and self.tgpio_modbus_baud == baudrate) or (host_id == XCONF.CONTROL_BOX_RS485_HOST_ID and self.control_box_modbus_baud == baudrate)):
             return 0
         if baudrate not in self.arm_cmd.BAUDRATES:
             return APIState.MODBUS_BAUD_NOT_SUPPORT
@@ -2426,9 +2492,9 @@ class Base(BaseObject, Events):
                     # self.arm_cmd.tgpio_addr_w16(XCONF.ServoConf.MODBUS_BAUDRATE, baud_inx)
                     self.arm_cmd.tgpio_addr_w16(0x1A0B, baud_inx, bid=host_id)
                     time.sleep(0.3)
-                    if host_id != XCONF.LINEAR_MOTOR_HOST_ID:
+                    if host_id != XCONF.CONTROL_BOX_RS485_HOST_ID:
                         self.arm_cmd.tgpio_addr_w16(XCONF.ServoConf.SOFT_REBOOT, 1, bid=host_id)
-                    if host_id == XCONF.TGPIO_HOST_ID:
+                    if host_id == XCONF.ROBOT_RS485_HOST_ID:
                         if self.error_code != 19 and self.error_code != 28:
                             self.get_err_warn_code()
                         if self.error_code == 19 or self.error_code == 28:
@@ -2454,21 +2520,21 @@ class Base(BaseObject, Events):
                 ret, cur_baud_inx = self._get_modbus_baudrate_inx(host_id=host_id)
                 self.log_api_info('API -> checkset_modbus_baud -> code={}, baud_inx={}'.format(ret, cur_baud_inx), code=ret)
             # if ret == 0 and cur_baud_inx < len(self.arm_cmd.BAUDRATES):
-            #     self.modbus_baud = self.arm_cmd.BAUDRATES[cur_baud_inx]
-        if host_id == XCONF.TGPIO_HOST_ID:
-            return 0 if self.modbus_baud == baudrate else APIState.MODBUS_BAUD_NOT_CORRECT
-        elif host_id == XCONF.LINEAR_MOTOR_HOST_ID:
-            return 0 if self.linear_motor_baud == baudrate else APIState.MODBUS_BAUD_NOT_CORRECT
+            #     self.tgpio_modbus_baud = self.arm_cmd.BAUDRATES[cur_baud_inx]
+        if host_id == XCONF.ROBOT_RS485_HOST_ID:
+            return 0 if self.tgpio_modbus_baud == baudrate else APIState.MODBUS_BAUD_NOT_CORRECT
+        elif host_id == XCONF.CONTROL_BOX_RS485_HOST_ID:
+            return 0 if self.control_box_modbus_baud == baudrate else APIState.MODBUS_BAUD_NOT_CORRECT
         else:
             if ret == 0 and 0 <= cur_baud_inx < len(self.arm_cmd.BAUDRATES):
                 return 0 if self.arm_cmd.BAUDRATES[cur_baud_inx] == baudrate else APIState.MODBUS_BAUD_NOT_CORRECT
             return APIState.MODBUS_BAUD_NOT_CORRECT
 
     @xarm_is_connected(_type='get')
-    def _get_modbus_baudrate_inx(self, host_id=XCONF.TGPIO_HOST_ID):
+    def _get_modbus_baudrate_inx(self, host_id=XCONF.ROBOT_RS485_HOST_ID):
         ret = self.arm_cmd.tgpio_addr_r16(XCONF.ServoConf.MODBUS_BAUDRATE & 0x0FFF, bid=host_id)
         if ret[0] in [XCONF.UxbusState.ERR_CODE, XCONF.UxbusState.WAR_CODE]:
-            if host_id == XCONF.TGPIO_HOST_ID:
+            if host_id == XCONF.ROBOT_RS485_HOST_ID:
                 if self.error_code != 19 and self.error_code != 28:
                     self.get_err_warn_code()
                 if self.error_code != 19 and self.error_code != 28:
@@ -2479,38 +2545,114 @@ class Base(BaseObject, Events):
                 if self.error_code != 100 + host_id:
                     ret[0] = 0
         if ret[0] == 0 and 0 <= ret[1] < len(self.arm_cmd.BAUDRATES):
-            if host_id == XCONF.TGPIO_HOST_ID:
-                self.modbus_baud = self.arm_cmd.BAUDRATES[ret[1]]
-            elif host_id == XCONF.LINEAR_MOTOR_HOST_ID:
-                self.linear_motor_baud = self.arm_cmd.BAUDRATES[ret[1]]
+            if host_id == XCONF.ROBOT_RS485_HOST_ID:
+                self.tgpio_modbus_baud = self.arm_cmd.BAUDRATES[ret[1]]
+            elif host_id == XCONF.CONTROL_BOX_RS485_HOST_ID:
+                self.control_box_modbus_baud = self.arm_cmd.BAUDRATES[ret[1]]
         return ret[0], ret[1]
-
-    @xarm_is_connected(_type='set')
-    def set_tgpio_modbus_timeout(self, timeout, is_transparent_transmission=False, **kwargs):
-        ret = self.arm_cmd.set_modbus_timeout(timeout, is_transparent_transmission=kwargs.get('is_tt', is_transparent_transmission))
-        self.log_api_info('API -> set_tgpio_modbus_timeout -> code={}'.format(ret[0]), code=ret[0])
-        return ret[0]
-
-    @xarm_is_connected(_type='set')
-    def set_tgpio_modbus_baudrate(self, baud):
-        code = self.checkset_modbus_baud(baud, check=False)
-        self.log_api_info('API -> set_tgpio_modbus_baudrate -> code={}'.format(code), code=code)
-        return code
-
-    @xarm_is_connected(_type='get')
-    def get_tgpio_modbus_baudrate(self):
-        code, baud_inx = self._get_modbus_baudrate_inx()
-        # if code == 0 and baud_inx < len(self.arm_cmd.BAUDRATES):
-        #     self.modbus_baud = self.arm_cmd.BAUDRATES[baud_inx]
-        return code, self.modbus_baud
     
-    @xarm_is_connected(_type='set')
-    def set_control_modbus_baudrate(self, baud):
-        code = self.checkset_modbus_baud(baud, check=False, host_id=XCONF.LINEAR_MOTOR_HOST_ID)
-        self.log_api_info('API -> set_control_modbus_baudrate -> code={}'.format(code), code=code)
+    def set_rs485_baudrate(self, baud, target='robot', **kwargs):
+        host_id = XCONF.CONTROL_BOX_RS485_HOST_ID if target == 'control_box' else XCONF.ROBOT_RS485_HOST_ID
+        code = self.checkset_modbus_baud(baud, check=False, host_id=host_id)
+        self.log_api_info('API -> set_rs485_baudrate({}, target={}) -> code={}'.format(baud, target, code), code=code)
         return code
     
-    def set_tgpio_modbus_use_503_port(self, use_503_port=True):
+    def get_rs485_baudrate(self, target='robot', **kwargs):
+        host_id = XCONF.CONTROL_BOX_RS485_HOST_ID if target == 'control_box' else XCONF.ROBOT_RS485_HOST_ID
+        code, baud_inx = self._get_modbus_baudrate_inx(host_id=host_id)
+        return code, self.control_box_modbus_baud if target == 'control_box' else self.tgpio_modbus_baud
+
+    def set_rs485_timeout(self, timeout, target='robot', protocol='modbus_rtu', **kwargs):
+        assert target in [True, False, 'robot', 'control_box'] and protocol in ['modbus_rtu', 'transparent']
+        is_tt = kwargs.get('is_tt', kwargs.get('is_transparent_transmission', target))
+        if isinstance(is_tt, bool) and (isinstance(target, bool) or target == 'robot') and protocol == 'modbus_rtu':
+            target = 'robot'
+            protocol='transparent' if is_tt else 'modbus_rtu'
+        else:
+            is_tt = True if protocol == 'transparent' else False
+        if target == 'control_box':
+            code = self.set_common_param(25 if is_tt else 24, timeout)
+            self.log_api_info('API -> set_rs485_timeout -> code={}'.format(code), code=code)
+        else:
+            ret = self.arm_cmd.set_modbus_timeout(timeout, is_transparent_transmission=is_tt)
+            self.log_api_info('API -> set_rs485_timeout -> code={}'.format(ret[0]), code=ret[0])
+            return ret[0]
+
+    def get_rs485_timeout(self, target='robot', protocol='modbus_rtu', **kwargs):
+        assert target in [True, False, 'robot', 'control_box'] and protocol in ['modbus_rtu', 'transparent']
+        is_tt = kwargs.get('is_tt', kwargs.get('is_transparent_transmission', target))
+        if isinstance(is_tt, bool) and (isinstance(target, bool) or target == 'robot') and protocol == 'modbus_rtu':
+            target = 'robot'
+            protocol='transparent' if is_tt else 'modbus_rtu'
+        else:
+            is_tt = True if protocol == 'transparent' else False
+        if target == 'control_box':
+            return self.get_common_param(25 if is_tt else 24)
+        else:
+            return self.get_common_param(5 if is_tt else 4)
+
+    @staticmethod
+    def _hexstr_to_ints(strs):
+        tmp_list = strs.split(' ')
+        datas = []
+        for item in tmp_list:
+            if not item:
+                continue
+            datas.append(int('0x{}'.format(item), 16) if not item.startswith('0x') else int(item, 16))
+        return datas
+
+    def set_rs485_data(self, datas, min_res_len=0, target='robot', protocol='modbus_rtu', use_503_port=False, **kwargs):
+        host_id = kwargs.get('host_id', target)
+        is_tt = kwargs.get('is_tt', kwargs.get('is_transparent_transmission', protocol))
+        if isinstance(host_id, int) or isinstance(is_tt, bool):
+            # 仅仅为了兼容getset_tgpio_modbus_data
+            host_id = host_id if isinstance(host_id, int) else XCONF.CONTROL_BOX_RS485_HOST_ID if host_id == 'control_box' else XCONF.ROBOT_RS485_HOST_ID
+            is_tt = is_tt if isinstance(is_tt, bool) else True if is_tt == 'transparent' else False
+        else:
+            host_id = XCONF.CONTROL_BOX_RS485_HOST_ID if target == 'control_box' else XCONF.ROBOT_RS485_HOST_ID
+            is_tt = True if protocol == 'transparent' else False
+
+        modbus_datas = self._hexstr_to_ints(datas) if isinstance(datas, str) else datas[:]
+        if is_tt and kwargs.get('auto_crc', False):
+            modbus_datas.extend(list(crc16.crc_modbus(modbus_datas)))
+        debug = kwargs.get('debug', False)
+        if use_503_port:
+            if not self.connected_503 and self.connect_503() != 0:
+                return APIState.NOT_CONNECTED, []
+            ret = self.arm_cmd_503.tgpio_set_modbus_func(modbus_datas, len(modbus_datas), host_id=host_id, is_transparent_transmission=is_tt, debug=debug)
+        else:
+            ret = self.arm_cmd.tgpio_set_modbus_func(modbus_datas, len(modbus_datas), host_id=host_id, is_transparent_transmission=is_tt, debug=debug)
+        ret[0] = self._check_modbus_code(ret, min_res_len + 2, host_id=host_id)
+        if not kwargs.get('ignore_log', False):
+            self.log_api_info('API -> set_rs485_data -> code={}, response={}'.format(ret[0], ret[2:]), code=ret[0])
+        return ret[0], ret[2:]
+
+    # def getset_tgpio_modbus_data(self, datas, min_res_len=0, host_id=XCONF.ROBOT_RS485_HOST_ID, is_transparent_transmission=False, use_503_port=False, **kwargs):
+    #     return self.set_rs485_data(datas, min_res_len, host_id, is_transparent_transmission, use_503_port, **kwargs)
+    #     # if not self.connected:
+    #     #     return APIState.NOT_CONNECTED, []
+    #     # is_tt = kwargs.get('is_tt', is_transparent_transmission)
+    #     # modbus_datas = self._hexstr_to_ints(datas) if isinstance(datas, str) else datas[:]
+    #     # if is_tt and kwargs.get('auto_crc', False):
+    #     #     modbus_datas.extend(list(crc16.crc_modbus(modbus_datas)))
+    #     # debug = kwargs.get('debug', False)
+    #     # if use_503_port:
+    #     #     if not self.connected_503 and self.connect_503() != 0:
+    #     #         return APIState.NOT_CONNECTED, []
+    #     #     ret = self.arm_cmd_503.tgpio_set_modbus_func(modbus_datas, len(modbus_datas), host_id=host_id, is_transparent_transmission=is_tt, debug=debug)
+    #     # else:
+    #     #     ret = self.arm_cmd.tgpio_set_modbus_func(modbus_datas, len(modbus_datas), host_id=host_id, is_transparent_transmission=is_tt, debug=debug)
+    #     # ret[0] = self._check_modbus_code(ret, min_res_len + 2, host_id=host_id)
+    #     # if not kwargs.get('ignore_log', False):
+    #     #     self.log_api_info('API -> set_rs485_data -> code={}, response={}'.format(ret[0], ret[2:]), code=ret[0])
+    #     # return ret[0], ret[2:]
+
+    # def set_rs485_data(self, datas, min_res_len=0, target='robot', protocol='modbus_rtu', use_503_port=False, **kwargs):
+    #     host_id = XCONF.CONTROL_BOX_RS485_HOST_ID if target == 'control_box' else XCONF.ROBOT_RS485_HOST_ID
+    #     is_tt = True if protocol == 'transparent' else False
+    #     return self.getset_tgpio_modbus_data(datas, min_res_len=min_res_len, host_id=host_id, is_tt=is_tt, use_503_port=use_503_port, **kwargs)
+
+    def set_rs485_use_503_port(self, use_503_port=True):
         if use_503_port:
             if not self.connected_503 and self.connect_503() != 0:
                 self.arm_cmd.tgpio_set_modbus_func = self.arm_cmd.tgpio_set_modbus
@@ -2520,33 +2662,40 @@ class Base(BaseObject, Events):
         else:
             self.arm_cmd.tgpio_set_modbus_func = self.arm_cmd.tgpio_set_modbus
         return 0
-    
-    @staticmethod
-    def _hexstr_to_ints(strs):
-        tmp_list = strs.split(' ')
-        datas = []
-        for item in tmp_list:
-            datas.append(int('0x{}'.format(item), 16) if not item.startswith('0x') else int(item, 16))
-        return datas
 
-    def getset_tgpio_modbus_data(self, datas, min_res_len=0, ignore_log=False, host_id=XCONF.TGPIO_HOST_ID, is_transparent_transmission=False, use_503_port=False, **kwargs):
+    def set_modbus_tcp_data(self, datas, raw=True, **kwargs):
+        """
+        发送modbus tcp数据, 并接收回复数据
+
+        :param datas: modbus指令数据(列表或者空格隔开的16进制字符串)
+        :param raw: datas是否是完整的modbus协议数据
+            raw==False时自动添加协议头(传输ID(2)+协议ID(2)+长度(2))
+        :param debug: 为True时将会把发送和接收的16进制数据打印出来
+        :return: (code, 接收数据)
+            raw==False时自动移除协议头(传输ID(2)+协议ID(2)+长度(2))
+
+        例子(获取TCP位置)
+            set_modbus_tcp_data([0x29], raw=False)
+            set_modbus_tcp_data('29', raw=False)
+            set_modbus_tcp_data([0x00, 0x02, 0x00, 0x03, 0x00, 0x01, 0x29])
+            set_modbus_tcp_data('00 02 00 03 00 01 29')
+        """
         if not self.connected:
             return APIState.NOT_CONNECTED, []
-        is_tt = kwargs.get('is_tt', is_transparent_transmission)
-        if isinstance(datas, str):
-            datas = self._hexstr_to_ints(datas)
-        if is_tt and kwargs.get('auto_crc', False):
-            datas.extend(list(crc16.crc_modbus(datas)))
-        if use_503_port:
+        is_str = isinstance(datas, str)
+        modbus_datas = self._hexstr_to_ints(datas) if is_str else datas[:]
+        debug = kwargs.get('debug', False)
+        if kwargs.get('use_503_port', False):
             if not self.connected_503 and self.connect_503() != 0:
                 return APIState.NOT_CONNECTED, []
-            ret = self.arm_cmd_503.tgpio_set_modbus_func(datas, len(datas), host_id=host_id, is_transparent_transmission=is_tt)
+            ret = self.arm_cmd_503.set_modbus_tcp_data(modbus_datas, raw=raw, debug=debug)
         else:
-            ret = self.arm_cmd.tgpio_set_modbus_func(datas, len(datas), host_id=host_id, is_transparent_transmission=is_tt)
-        ret[0] = self._check_modbus_code(ret, min_res_len + 2, host_id=host_id)
-        if not ignore_log:
-            self.log_api_info('API -> getset_tgpio_modbus_data -> code={}, response={}'.format(ret[0], ret[2:]), code=ret[0])
-        return ret[0], ret[2:]
+            ret = self.arm_cmd.set_modbus_tcp_data(modbus_datas, raw=raw, debug=debug)
+        ret[0] = self._check_code(ret[0])
+        # res = ret[1:] if raw else ret[7:]
+        # if is_str:
+        #     res = ' '.join(['{:x}'.format(item).zfill(2) for item in res])
+        return ret[0], ret[1:] if raw else ret[7:]
 
     @xarm_is_connected(_type='set')
     def set_simulation_robot(self, on_off):
@@ -2554,7 +2703,7 @@ class Base(BaseObject, Events):
         ret[0] = self._check_code(ret[0])
         self.log_api_info('API -> set_simulation_robot({}) -> code={}'.format(on_off, ret[0]), code=ret[0])
         return ret[0]
-    
+
     @xarm_wait_until_not_pause
     @xarm_wait_until_cmdnum_lt_max
     @xarm_is_ready(_type='set')
@@ -2672,3 +2821,15 @@ class Base(BaseObject, Events):
         code, params = self.get_common_param(6)
         params = list(map(lambda x: float('{:.6f}'.format(x)), params))
         return code, params
+
+    def set_external_device_monitor_params(self, dev_type, frequency):
+        return self.set_common_param(15, [dev_type, frequency])
+
+    def get_external_device_monitor_params(self):
+        return self.get_common_param(15)
+
+    def set_tgpio_monitor_params(self, io_type, frequency):
+        return self.set_common_param(16, [io_type, frequency])
+
+    def get_tgpio_monitor_params(self):
+        return self.get_common_param(16)
