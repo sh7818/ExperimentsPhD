@@ -1,4 +1,4 @@
-xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrapper.xarm_api
+xArm-Python-SDK API Documentation (V1.17.0): class XArmAPI in module xarm.wrapper.xarm_api
 
 ## class __XArmAPI__
 ****************************************
@@ -443,7 +443,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > :return: code, states  
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
 > &ensp;&ensp;&ensp;&ensp;states: [...]  
-> &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;states[0]: controller gpio module state  
+> &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;states[0]: contorller gpio module state  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;states[0] == 0: normal  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;states[0] == 1: wrong  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;states[0] == 6: communication failure  
@@ -522,18 +522,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > :return: tuple((code, [error_code, warn_code])), only when code is 0, the returned result is correct.  
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
 > &ensp;&ensp;&ensp;&ensp;error_code: See the [Controller Error Code Documentation](./xarm_api_code.md#controller-error-code) for details.  
-> &ensp;&ensp;&ensp;&ensp;warn_code: See the [Controller Warn Code Documentation](./xarm_api_code.md#controller-warn-code) for details.
-
-
-#### def __get_external_device_monitor_params__(self):
-
-> Get the monitor params of the external device  
-> Note:  
-> &ensp;&ensp;&ensp;&ensp;1. only available if firmware_version >= 2.7.100  
->   
-> :return: tuple((code, params)), only when code is 0, the returned result is correct.  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
-> &ensp;&ensp;&ensp;&ensp;params: [dev_type, frequency]
+> &ensp;&ensp;&ensp;&ensp;warn_code: See the [Controller Error Code Documentation](./xarm_api_code.md#controller-warn-code) for details.
 
 
 #### def __get_fdb_mat_history_num__(self):
@@ -1068,33 +1057,6 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
 
 
-#### def __get_rs485_baudrate__(self, target='robot', **kwargs):
-
-> Get the baudrate of the target RS485  
->   
-> :param target: 'robot' or 'control_box'  
-> &ensp;&ensp;&ensp;&ensp;robot: Robot RS485  
-> &ensp;&ensp;&ensp;&ensp;control_box: ControlBox RS485  
-> :return: tuple((code, baudrate)), only when code is 0, the returned result is correct.  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
-> &ensp;&ensp;&ensp;&ensp;baudrate: the modbus baudrate of the target RS485
-
-
-#### def __get_rs485_timeout__(self, target='robot', protocol='modbus_rtu', **kwargs):
-
-> Get the timeout of the target RS485  
->   
-> :param target: 'robot' or 'control_box'  
-> &ensp;&ensp;&ensp;&ensp;robot: Robot RS485  
-> &ensp;&ensp;&ensp;&ensp;control_box: ControlBox RS485  
-> :param protocol: 'modbus_rtu' or 'transparent'  
-> &ensp;&ensp;&ensp;&ensp;modbus_rtu: Modbus RTU  
-> &ensp;&ensp;&ensp;&ensp;transparent: Transparent Transmission  
-> :return: tuple((code, timeout)), only when code is 0, the returned result is correct.  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
-> &ensp;&ensp;&ensp;&ensp;timeout: timeout of the target RS485, milliseconds
-
-
 #### def __get_servo_angle__(self, servo_id=None, is_radian=None, is_real=False):
 
 > Get the servo angle  
@@ -1162,23 +1124,23 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 
 #### def __get_tgpio_modbus_baudrate__(self):
 
-> Set the baudrate of the Robot RS485 (please use get_rs485_baudrate)
-
-
-#### def __get_tgpio_modbus_timeout__(self, is_transparent_transmission=False, **kwargs):
-
-> Get the timeout of the Robot RS485 (please use get_rs485_timeout replace)
-
-
-#### def __get_tgpio_monitor_params__(self):
-
-> Get the monitor params of the TGPIO  
-> Note:  
-> &ensp;&ensp;&ensp;&ensp;1. only available if firmware_version >= 2.7.101  
+> Get the modbus baudrate of the tool gpio  
 >   
-> :return: tuple((code, params)), only when code is 0, the returned result is correct.  
+> :return: tuple((code, baudrate)), only when code is 0, the returned result is correct.  
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
-> &ensp;&ensp;&ensp;&ensp;params: [io_type, frequency]
+> &ensp;&ensp;&ensp;&ensp;baudrate: the modbus baudrate of the tool gpio
+
+
+#### def __get_tgpio_modbus_timeout__(self, is_transparent_transmission=False):
+
+> Get tgpio modbus timeout  
+> Note:  
+> &ensp;&ensp;&ensp;&ensp;Only available if firmware_version >= 2.3.0  
+>   
+> :param is_transparent_transmission: is transparent transmission or not  
+> :return: tuple((code, timeout)), only when code is 0, the returned result is correct.  
+> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
+> &ensp;&ensp;&ensp;&ensp;timeout: timeout of the tgpio modbus, milliseconds
 
 
 #### def __get_tgpio_output_digital__(self, ionum=None):
@@ -1203,7 +1165,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > Get the digital value of the specified Tool GPIO,Compared with the "get_tgpio_digital" interface,  
 > &ensp;&ensp;&ensp;&ensp;the value of TI2 is obtained when the ionum is not transmitted.  
 >   
-> :param ionum: 0 or 1 or 2 or 3 or 4 (both 0 and 4), default is None  
+> :param ionum: 0 or 1 or or 2 or 3 or 4 (both 0 and 4), default is None  
 > :return: tuple((code, value or value list)), only when code is 0, the returned result is correct.  
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
 
@@ -1278,12 +1240,12 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 
 #### def __getset_tgpio_modbus_data__(self, datas, min_res_len=0, host_id=9, is_transparent_transmission=False, use_503_port=False, **kwargs):
 
-> Send the modbus data to the RS485 (please use set_rs485_data replace)  
+> Send the modbus data to the tool gpio  
 >   
 > :param datas: data_list  
 > :param min_res_len: the minimum length of modbus response data. Used to check the data length, if not specified, no check  
-> :param host_id: host_id, default is 9 (ROBOT_RS485_HOST_ID)  
-> &ensp;&ensp;&ensp;&ensp;9: Robot RS485  
+> :param host_id: host_id, default is 9 (TGPIO_HOST_ID)  
+> &ensp;&ensp;&ensp;&ensp;9: END RS485  
 > &ensp;&ensp;&ensp;&ensp;11: CONTROLLER RS485  
 > :param is_transparent_transmission: whether to choose transparent transmission, default is False  
 > &ensp;&ensp;&ensp;&ensp;Note: only available if firmware_version >= 1.11.0  
@@ -1443,12 +1405,14 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 
 #### def __move_gohome__(self, speed=None, mvacc=None, mvtime=None, is_radian=None, wait=False, timeout=None, **kwargs):
 
-> Move to go home (Back to zero)  
-> Warning: without limit detection  
+> Move to go home (Back to zero), the API will modify self.last_used_position and self.last_used_angles value  
+> Warnning: without limit detection  
 > Note:  
-> &ensp;&ensp;&ensp;&ensp;1. If you want to wait for the robot to complete this action and then return, please set the parameter wait to True.  
+> &ensp;&ensp;&ensp;&ensp;1. The API will change self.last_used_position value into [201.5, 0, 140.5, -180, 0, 0]  
+> &ensp;&ensp;&ensp;&ensp;2. The API will change self.last_used_angles value into [0, 0, 0, 0, 0, 0, 0]  
+> &ensp;&ensp;&ensp;&ensp;3. If you want to wait for the robot to complete this action and then return, please set the parameter wait to True.  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;ex: code = arm.move_gohome(wait=True)  
-> &ensp;&ensp;&ensp;&ensp;2. This interface does not modify the value of last_used_joint_speed/last_used_joint_acc  
+> &ensp;&ensp;&ensp;&ensp;4. This interface does not modify the value of last_used_angles/last_used_joint_speed/last_used_joint_acc  
 >   
 > :param speed: gohome speed (unit: rad/s if is_radian is True else °/s), default is 50 °/s  
 > :param mvacc: gohome acceleration (unit: rad/s^2 if is_radian is True else °/s^2), default is 5000 °/s^2  
@@ -1826,7 +1790,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 #### def __reset__(self, speed=None, mvacc=None, mvtime=None, is_radian=None, wait=False, timeout=None):
 
 > Reset the xArm  
-> Warning: without limit detection  
+> Warnning: without limit detection  
 > Note:  
 > &ensp;&ensp;&ensp;&ensp;1. If there are errors or warnings, this interface will clear the warnings and errors.  
 > &ensp;&ensp;&ensp;&ensp;2. If not ready, the api will auto enable motion and set state  
@@ -1914,7 +1878,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > :param pos: position of the gripper. Integer between 0 and 255. 0 being the open position and 255 being the close position.  
 > :param speed: gripper speed between 0 and 255  
 > :param force: gripper force between 0 and 255  
-> :param wait: whether to wait for the robotiq motion complete, default is True  
+> :param wait: whether to wait for the robotion motion complete, default is True  
 > :param timeout: maximum waiting time(unit: second), default is 5, only available if wait=True  
 >   
 > :return: tuple((code, robotiq_response))  
@@ -2017,7 +1981,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > &ensp;&ensp;&ensp;&ensp;'M117': 'set_gripper_mode: M117 V{mode}'  
 > &ensp;&ensp;&ensp;&ensp;'M119': 'get_gripper_position: M119'  
 > &ensp;&ensp;&ensp;&ensp;'M120': 'set_gripper_position: M120 V{pos}'  
-> &ensp;&ensp;&ensp;&ensp;'M121': 'set_gripper_speed: M121 V{speed}'  
+> &ensp;&ensp;&ensp;&ensp;'M121': 'set_gripper_speed: M116 V{speed}'  
 > &ensp;&ensp;&ensp;&ensp;'M125': 'get_gripper_err_code: M125'  
 > &ensp;&ensp;&ensp;&ensp;'M126': 'clean_gripper_error: M126'  
 > &ensp;&ensp;&ensp;&ensp;'M131': 'get_tgpio_digital: M131'  
@@ -2116,7 +2080,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > :param pos: gripper pos between 71 and 150, (unit: mm)  
 > :param speed: gripper speed between 500 and 4500, default is 2000, (unit: pulse/s)  
 > :param force: gripper force between 1 and 100, default is 100  
-> :param wait: whether to wait for the BIO Gripper G2 motion complete, default is False  
+> :param wait: whether to wait for the robotiq motion to complete, default is True  
 > :param timeout: maximum waiting time(unit: second), default is 5, only available if wait=True  
 >   
 > :return: tuple((code, robotiq_response))  
@@ -2324,6 +2288,16 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
 
 
+#### def __set_control_modbus_baudrate__(self, baud):
+
+> Set the modbus baudrate of the control box  
+>   
+> :param baud: 4800/9600/19200/38400/57600/115200/230400/460800/921600/1000000/1500000/2000000/2500000  
+>   
+> :return: code  
+> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
+
+
 #### def __set_counter_increase__(self, val=1):
 
 > Set counter plus value, only support plus 1  
@@ -2359,51 +2333,6 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
 
 
-#### def __set_dhpgc_gripper_activate__(self, wait=True, timeout=3):
-
-> If not already activated. Activate the DH-PGC-140-50 gripper  
->   
-> :param wait: whether to wait for the DH-PGC-140-50  gripper activate complete, default is True  
-> :param timeout: maximum waiting time(unit: second), default is 3, only available if wait=True  
->   
-> :return: code  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
-
-
-#### def __set_dhpgc_gripper_position__(self, pos, speed=50, force=50, wait=True, timeout=5, **kwargs):
-
-> Set the position of the DH-PGC-140-50 gripper  
->   
-> :param pos: gripper pos between 0 and 1000  
-> :param speed: gripper speed between 1 and 100  
-> :param force: gripper force between 20 and 100  
-> :param wait: whether to wait for the DH-PGC-140-50 gripper motion to complete, default is True  
-> :param timeout: maximum waiting time(unit: second), default is 5s, only available if wait=True  
->   
-> :return: code  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
-
-
-#### def __set_external_device_monitor_params__(self, dev_type, frequency):
-
-> Set the monitor params of the external device  
-> Note:  
-> &ensp;&ensp;&ensp;&ensp;1. only available if firmware_version >= 2.7.100  
-> &ensp;&ensp;&ensp;&ensp;2. after it is turned on, the position/speed/current information of the external device will be reported through port 30000  
-> &ensp;&ensp;&ensp;&ensp;3. once an error occurs, you need to re call to monitor  
->   
-> :param dev_type: the type of the external device  
-> &ensp;&ensp;&ensp;&ensp;0: Turn off monitoring  
-> &ensp;&ensp;&ensp;&ensp;1: xArm Gripper  
-> &ensp;&ensp;&ensp;&ensp;2: xArm Gripper G2  
-> &ensp;&ensp;&ensp;&ensp;3: BIO Gripper G2  
-> &ensp;&ensp;&ensp;&ensp;4: Robotiq 2F-85/Robotiq 2F-140  
-> :param frequency: the frequency of communication with the external device  
->   
-> :return code  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
-
-
 #### def __set_fdb_mat_history_num__(self, num):
 
 > Set fdb mat history num  
@@ -2435,7 +2364,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 
 #### def __set_fence_mode__(self, on):
 
-> Set the fence mode,turn on/off fence mode  
+> Set the fence mode,turn on/off fense mode  
 >   
 > Note:  
 > &ensp;&ensp;&ensp;&ensp;1. This interface relies on Firmware 1.2.11 or above  
@@ -2636,6 +2565,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > &ensp;&ensp;&ensp;&ensp;2. Changes are not saved automatically. Call save_conf() to save the settings,   
 > &ensp;&ensp;&ensp;otherwise, they will be lost after a reboot.  
 > &ensp;&ensp;&ensp;&ensp;3. Use clean_conf() to restore the system default settings.  
+> &ensp;&ensp;&ensp;&ensp;4. The clean_conf interface can restore system default settings  
 >   
 > :param direction: Gravity direction vector [x, y, z], e.g., [0, 0, -1] for a floor-mounted arm.  
 > :param wait: Whether to wait for the robotic arm to stop or clear all previous queued commands before applying the setting.  
@@ -2660,7 +2590,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > :param pos: gripper pos between 0 and 84, (unit: mm)  
 > :param speed: gripper speed between 15 and 225, default is 100, (unit: mm/s)  
 > :param force: gripper force between 1 and 100, default is 50  
-> :param wait: whether to wait for the xArm Gripper G2 motion complete, default is False  
+> :param wait: whether to wait for the bio gripper motion complete, default is False  
 > :param timeout: maximum waiting time(unit: second), default is 10s, only valid if wait is True  
 > :return: code  
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
@@ -2919,12 +2849,13 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 
 > Set the cartesian position, the API will modify self.last_used_position value  
 > Note:  
-> &ensp;&ensp;&ensp;&ensp;1. If it is xArm5, roll must be set to 180° or π rad, pitch must be set to 0  
-> &ensp;&ensp;&ensp;&ensp;2. If the parameter(roll/pitch/yaw) you are passing is an radian unit, be sure to set the parameter is_radian to True.  
+> &ensp;&ensp;&ensp;&ensp;1. If it is xArm5, ensure that the current robotic arm has a roll value of 180° or π rad and has a roll value of 0 before calling this interface.  
+> &ensp;&ensp;&ensp;&ensp;2. If it is xArm5, roll must be set to 180° or π rad, pitch must be set to 0  
+> &ensp;&ensp;&ensp;&ensp;3. If the parameter(roll/pitch/yaw) you are passing is an radian unit, be sure to set the parameter is_radian to True.  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;ex: code = arm.set_position(x=300, y=0, z=200, roll=-3.14, pitch=0, yaw=0, is_radian=True)  
-> &ensp;&ensp;&ensp;&ensp;3. If you want to wait for the robot to complete this action and then return, please set the parameter wait to True.  
+> &ensp;&ensp;&ensp;&ensp;4. If you want to wait for the robot to complete this action and then return, please set the parameter wait to True.  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;ex: code = arm.set_position(x=300, y=0, z=200, roll=180, pitch=0, yaw=0, is_radian=False, wait=True)  
-> &ensp;&ensp;&ensp;&ensp;4. This interface is only used in the base coordinate system.  
+> &ensp;&ensp;&ensp;&ensp;5. This interface is only used in the base coordinate system.  
 >   
 > :param x: cartesian position x, (unit: mm), default is self.last_used_position[0]  
 > :param y: cartesian position y, (unit: mm), default is self.last_used_position[1]  
@@ -3077,73 +3008,6 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
 
 
-#### def __set_rh56_finger_position__(self, finger_id, pos, speed=500, force=500, wait=False, timeout=None, **kwargs):
-
-> Set the position of the INS-RH56DFX finger  
->   
-> :param finger_id: INS-RH56DFX finger_id between 1 and 6  
-> :param pos: INS-RH56DFX pos between 0 and 1000  
-> :param speed: INS-RH56DFX speed between 0 and 1000, default is 500  
-> :param force: INS-RH56DFX force between 0 and 1000, default is 500  
-> :param wait: whether to wait for the INS-RH56DFX finger motion complete, default is False  
-> :param timeout: maximum waiting time(unit: second), default is 5s, only valid if wait is True  
-> :return: code  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
-
-
-#### def __set_rs485_baudrate__(self, baud, target='robot', **kwargs):
-
-> Set the baudrate of the target RS485  
->   
-> :param baud: 4800/9600/19200/38400/57600/115200/230400/460800/921600/1000000/1500000/2000000/2500000  
-> :param target: 'robot' or 'control_box'  
-> &ensp;&ensp;&ensp;&ensp;robot: Robot RS485  
-> &ensp;&ensp;&ensp;&ensp;control_box: ControlBox RS485  
-> :return: tuple((code, baudrate)), only when code is 0, the returned result is correct.  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
-> &ensp;&ensp;&ensp;&ensp;baudrate: the modbus baudrate of the target RS485
-
-
-#### def __set_rs485_data__(self, datas, min_res_len=0, target='robot', protocol='modbus_rtu', use_503_port=False, **kwargs):
-
-> Send the modbus data to the target RS485  
->   
-> :param datas: data_list  
-> :param min_res_len: the minimum length of modbus response data. Used to check the data length, if not specified, no check  
-> :param target: 'robot' or 'control_box'  
-> &ensp;&ensp;&ensp;&ensp;robot: Robot RS485  
-> &ensp;&ensp;&ensp;&ensp;control_box: ControlBox RS485  
-> :param protocol: 'modbus_rtu' or 'transparent'  
-> &ensp;&ensp;&ensp;&ensp;modbus_rtu: Modbus RTU  
-> &ensp;&ensp;&ensp;&ensp;transparent: Transparent Transmission  
-> :param use_503_port: whether to use port 503 for communication, default is False  
-> &ensp;&ensp;&ensp;&ensp;Note: if it is True, it will connect to 503 port for communication when it is used for the first time, which is generally only useful for transparent transmission.  
-> &ensp;&ensp;&ensp;&ensp;Note: only available if firmware_version >= 1.11.0  
->   
-> :return: tuple((code, modbus_response))  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.  
-> &ensp;&ensp;&ensp;&ensp;modbus_response: modbus response data
-
-
-#### def __set_rs485_timeout__(self, timeout, target='robot', protocol='modbus_rtu', **kwargs):
-
-> Set the timeout of the target RS485  
->   
-> :param timeout: timeout, milliseconds  
-> :param target: 'robot' or 'control_box'  
-> &ensp;&ensp;&ensp;&ensp;robot: Robot RS485  
-> &ensp;&ensp;&ensp;&ensp;control_box: ControlBox RS485  
-> :param protocol: 'modbus_rtu' or 'transparent'  
-> &ensp;&ensp;&ensp;&ensp;modbus_rtu: Modbus RTU  
-> &ensp;&ensp;&ensp;&ensp;transparent: Transparent Transmission  
-> :return: code  
-> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
-
-
-#### def __set_rs485_use_503_port__(self, use_503_port=True):
-
-
-
 #### def __set_self_collision_detection__(self, on_off):
 
 > Set whether to enable self-collision detection   
@@ -3173,7 +3037,7 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 > &ensp;&ensp;&ensp;&ensp;1. If servo_id is 1-(Number of axes), angle should be a numeric value  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;ex: code = arm.set_servo_angle(servo_id=1, angle=45, is_radian=False)  
 > &ensp;&ensp;&ensp;&ensp;2. If servo_id is None or 8, angle should be a list of values whose length is the number of joints  
-> &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;like [axis-1, axis-2, axis-3, axis-4, axis-5, axis-6, axis-7]  
+> &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;like [axis-1, axis-2, axis-3, axis-3, axis-4, axis-5, axis-6, axis-7]  
 > &ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;&ensp;ex: code = arm.set_servo_angle(angle=[30, -45, 0, 0, 0, 0, 0], is_radian=False)  
 > :param speed: move speed (unit: rad/s if is_radian is True else °/s), default is self.last_used_joint_speed  
 > :param mvacc: move acceleration (unit: rad/s^2 if is_radian is True else °/s^2), default is self.last_used_joint_acc  
@@ -3399,28 +3263,28 @@ xArm-Python-SDK API Documentation (V1.17.3): class XArmAPI in module xarm.wrappe
 
 #### def __set_tgpio_modbus_baudrate__(self, baud):
 
-> Set the baudrate of the Robot RS485 (please use set_rs485_baudrate)
+> Set the modbus baudrate of the tool gpio  
+>   
+> :param baud: 4800/9600/19200/38400/57600/115200/230400/460800/921600/1000000/1500000/2000000/2500000  
+>   
+> :return: code  
+> &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
 
 
 #### def __set_tgpio_modbus_timeout__(self, timeout, is_transparent_transmission=False, **kwargs):
 
-> Set the timeout of the Robot RS485 (please use set_rs485_timeout)
-
-
-#### def __set_tgpio_monitor_params__(self, io_type, frequency):
-
-> Set the monitor params of the TGPIO  
-> Note:  
-> &ensp;&ensp;&ensp;&ensp;1. only available if firmware_version >= 2.7.101  
-> &ensp;&ensp;&ensp;&ensp;2. after it is turned on, the information of the TGPIO will be reported through port 30000  
+> Set the modbus timeout of the tool gpio  
 >   
-> :param io_type: the type of the TGPIO  
-> &ensp;&ensp;&ensp;&ensp;0: Turn off monitoring  
-> &ensp;&ensp;&ensp;&ensp;1: Turn on monitoring  
-> :param frequency: the frequency of communication with the TGPIO  
+> :param timeout: timeout, milliseconds  
+> :param is_transparent_transmission: whether the set timeout is the timeout of transparent transmission  
+> &ensp;&ensp;&ensp;&ensp;Note: only available if firmware_version >= 1.11.0  
 >   
-> :return code  
+> :return: code  
 > &ensp;&ensp;&ensp;&ensp;code: See the [API Code Documentation](./xarm_api_code.md#api-code) for details.
+
+
+#### def __set_tgpio_modbus_use_503_port__(self, use_503_port=True):
+
 
 
 #### def __set_timeout__(self, timeout):
