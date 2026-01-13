@@ -15,7 +15,7 @@ csv_path = str(time.time())+'.csv'
 arm = XArmAPI(ip)
 
 start = 0
-repetitions = 15
+repetitions = 20
 
 
 arm.clean_warn()
