@@ -26,12 +26,12 @@ arm.set_mode(0)
 arm.set_state(state=0)
 arm.move_gohome(wait=False)
 
-arm.set_tool_position(x=50, y=50, z=50, roll=0, pitch=0, yaw=0, radius=None,speed=20, wait=False)
+arm.set_tool_position(x=100, y=100, z=0, roll=0, pitch=0, yaw=0, radius=None,speed=20, wait=False)
 
 
 cumul       =   [50,50,50]
 cumulr      =   [0,0,0]
-boundaries  =   [[100,200],[100,200],[-100,0]]
+boundaries  =   [[50,150],[50,150],[-100,0]]
 boundariesr =   [[-15,15],[-15,15],[-15,15]]
 
 def random_translation(low,high,axis):
