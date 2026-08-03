@@ -15,10 +15,11 @@ ip = "192.168.1.150"
 csv_path = "Data/"+str(time.time())+'.csv'
 arm = XArmAPI(ip)
 
-start = 0
-repetitions = 100
-
-
+start       = 0
+repetitions = 200
+init_calib  = False
+cnt_calib   = 0
+thr_calib   = 30*6*3.33
 arm.clean_warn()
 arm.clean_error()
 arm.motion_enable(True)
@@ -36,29 +37,51 @@ boundariesr =   [[-15,15],[-15,15],[-15,15]]
 
 def random_translation(low,high,axis):
 
-  ri =  random.randint(low,high)
+    global init_calib
+    global cnt_calib
 
-  if (ri + cumul[axis] < boundaries[axis][0]) or (ri + cumul[axis] > boundaries[axis][1]):
-      return  random_translation(low,high,axis)
-  else:
-      cumul[axis] += ri
-      return ri
+    if init_calib == False:
+        if cnt_calib < thr_calib:
+            cnt_calib+=1
+
+            return 0
+        else:
+            init_calib = True
+            return 0
+    else:
+        ri =  random.randint(low,high)
+        if (ri + cumul[axis] < boundaries[axis][0]) or (ri + cumul[axis] > boundaries[axis][1]):
+            return  random_translation(low,high,axis)
+        else:
+            cumul[axis] += ri
+            return ri
+
 
 def random_rotation(low,high,axis):
 
-  ri =  random.randint(low,high)
+    global init_calib
+    global cnt_calib
 
-  if (ri + cumulr[axis] < boundariesr[axis][0]) or (ri + cumulr[axis] > boundariesr[axis][1]):
-      return  random_rotation(low,high,axis)
-  else:
-      cumulr[axis] += ri
-      return ri
+    if init_calib == False:
+        if cnt_calib < thr_calib:
+            cnt_calib+=1
+            return 0
+        else:
+            init_calib = True
+            return 0
+    else:
+        ri =  random.randint(low,high)
+        if (ri + cumulr[axis] < boundariesr[axis][0]) or (ri + cumulr[axis] > boundariesr[axis][1]):
+            return  random_rotation(low,high,axis)
+        else:
+            cumulr[axis] += ri
+            return ri
 
 
 
 
 for i in range(1,repetitions+1):
-
+    time.sleep(0.3)
     xr = random_translation(-100,100,0)
     yr = random_translation(-100,100,1)
     zr = random_translation(-50,50,2)
@@ -81,7 +104,7 @@ with open(csv_path, mode='w', newline='') as file:
        else: pass
 
     while(arm.get_state()[1]==1):
-
+           
            writer.writerow([time.time()]+arm.get_position(True)[1])
 
 print("finished:", csv_path)
