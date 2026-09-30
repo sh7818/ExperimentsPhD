@@ -89,8 +89,9 @@ for i in range(1,repetitions+1):
     pr = random_rotation(-15,15,1)
     yr = random_rotation(-15,15,2)
 
-    arm.set_tool_position(x=int(xr), y=int(yr), z=int(zr), roll=int(rr), pitch=int(pr), yaw=int(yr), radius=None,speed=20, wait=False)
-
+    arm.set_tool_position(x=int(xr), y=int(yr), z=int(zr), roll=int(rr), pitch=int(pr), yaw=int(yr), radius=None,speed=60, wait=False)
+    time.sleep(0.3)
+    arm.set_tool_position(x=-1*int(xr), y=-1*int(yr), z=-1*int(zr), roll=-1*int(rr), pitch=-1*int(pr), yaw=-1*int(yr), radius=None,speed=60, wait=False)
 
 
 with open(csv_path, mode='w', newline='') as file:
@@ -104,7 +105,7 @@ with open(csv_path, mode='w', newline='') as file:
        else: pass
 
     while(arm.get_state()[1]==1):
-           
+
            writer.writerow([time.time()]+arm.get_position(True)[1])
 
 print("finished:", csv_path)
