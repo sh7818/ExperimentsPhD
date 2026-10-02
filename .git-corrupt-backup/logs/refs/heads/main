@@ -1,0 +1,23 @@
+0000000000000000000000000000000000000000 86e12af21cfb6ec6e4075513df30f7ef2180e617 sav <sav@sav.(none)> 1762347984 +0000	clone: from https://github.com/xArm-Developer/xArm-Python-SDK.git
+86e12af21cfb6ec6e4075513df30f7ef2180e617 86e12af21cfb6ec6e4075513df30f7ef2180e617 sav <sav@sav.tail8edea4.ts.net> 1765280833 +0000	Branch: renamed refs/heads/master to refs/heads/main
+86e12af21cfb6ec6e4075513df30f7ef2180e617 199145d1682a9dc4653191a92aeba4cdd2f1986d sav <sav@sav.tail8edea4.ts.net> 1765286536 +0000	pull: Fast-forward
+199145d1682a9dc4653191a92aeba4cdd2f1986d 8743169beb33cfd62189333c70fd1d38c4c2f3f0 sav <sav@sav.tail8edea4.ts.net> 1767890831 +0000	commit: creating
+8743169beb33cfd62189333c70fd1d38c4c2f3f0 bc9bf3696a5c49db824ab089e932776f38b2d260 sh7818 <sav@sav.tail8edea4.ts.net> 1767891001 +0000	commit: first commit
+bc9bf3696a5c49db824ab089e932776f38b2d260 bc9bf3696a5c49db824ab089e932776f38b2d260 sh7818 <sav@sav.tail8edea4.ts.net> 1767891001 +0000	Branch: renamed refs/heads/main to refs/heads/main
+bc9bf3696a5c49db824ab089e932776f38b2d260 15145bef625be3ab20c651c0dd85a912d3245a99 sh7818 <sav@sav.tail8edea4.ts.net> 1767891080 +0000	commit: first commit
+15145bef625be3ab20c651c0dd85a912d3245a99 15145bef625be3ab20c651c0dd85a912d3245a99 sh7818 <sav@sav.tail8edea4.ts.net> 1767891084 +0000	Branch: renamed refs/heads/main to refs/heads/main
+15145bef625be3ab20c651c0dd85a912d3245a99 a4b859ea334e8757493a316706ebe654625e262d sh7818 <sav@sav.tail8edea4.ts.net> 1768297603 +0000	commit: trial
+a4b859ea334e8757493a316706ebe654625e262d e5d152ac20eda6d629c31211d9ab8334fab86161 sh7818 <sav@sav.tail8edea4.ts.net> 1768303361 +0000	commit: corrected timestamps
+e5d152ac20eda6d629c31211d9ab8334fab86161 8479859ea5544c927a33d803a855ac56fbc0531c sh7818 <sav@sav.tail8edea4.ts.net> 1768922236 +0000	commit: Created random movement generation, directory structure, codenames
+8479859ea5544c927a33d803a855ac56fbc0531c 66fe6bdd3eb01eb010c405230b06283deb8dc2cb sh7818 <sav@sav.tail8edea4.ts.net> 1769613069 +0000	commit: C data
+66fe6bdd3eb01eb010c405230b06283deb8dc2cb 208c7524076906075be9080706ec4b40f9208b8a sh7818 <sav@sav.tail8edea4.ts.net> 1776694664 +0100	commit: added rotation
+208c7524076906075be9080706ec4b40f9208b8a d926e4b64925723b367bf740e7b44301fb6e8e52 sh7818 <sav@sav.tail8edea4.ts.net> 1776695744 +0100	commit: added +1
+d926e4b64925723b367bf740e7b44301fb6e8e52 4eb0d7aa1e97cec8cba5e37900deee9a59715d00 sh7818 <sav@sav.tail8edea4.ts.net> 1777383966 +0100	commit: added rotation
+4eb0d7aa1e97cec8cba5e37900deee9a59715d00 de76dcd43fcdbd5a38f32e54496b1dcbb5824a3f sh7818 <sh7818@ic.ac.uk> 1778678315 +0100	commit: shortened the reach & 150 reps of motion
+de76dcd43fcdbd5a38f32e54496b1dcbb5824a3f 1cb60696543821057d285b5ce88db9d13138e135 sh7818 <sh7818@ic.ac.uk> 1778848172 +0100	commit: found some IMU setting mistakes using claude, also this is up to date code for robot with rotations, previously want uploaded
+1cb60696543821057d285b5ce88db9d13138e135 3a07aa9696c23242b166f1fd7b719ef5c4452a8c sh7818 <sh7818@ic.ac.uk> 1778853265 +0100	commit: new data
+3a07aa9696c23242b166f1fd7b719ef5c4452a8c ef73fba86620578775e0703b253e56338232d80a sh7818 <sh7818@ic.ac.uk> 1778853299 +0100	commit: fix
+ef73fba86620578775e0703b253e56338232d80a 7a8ec8b1b8c19b2f961e97134fc65a64e34f6dd5 sh7818 <sh7818@ic.ac.uk> 1784717413 +0100	commit: added test dataset
+7a8ec8b1b8c19b2f961e97134fc65a64e34f6dd5 6d82dad3dadba232188a3a9f46ea1d3c08c802f7 sh7818 <sh7818@ic.ac.uk> 1784717441 +0100	commit: added test dataset
+6d82dad3dadba232188a3a9f46ea1d3c08c802f7 c79b7b488e94b48e9d4b60df6ffc1b91dcd48a25 sh7818 <sh7818@ic.ac.uk> 1785765642 +0100	commit: Added stationary calibration
+c79b7b488e94b48e9d4b60df6ffc1b91dcd48a25 9d2c6aecadbf1f6def8d3e1d45670a093d280c68 sh7818 <sh7818@ic.ac.uk> 1785765657 +0100	commit: Added stationary calibration
